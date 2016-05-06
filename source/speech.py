@@ -946,6 +946,8 @@ def getSpeechTextForProperties(reason=controlTypes.REASON_QUERY,**propertyValues
 		textList.append(propertyValues['description'])
 	if 'keyboardShortcut' in propertyValues:
 		textList.append(propertyValues['keyboardShortcut'])
+	if includeTableCellCoords and cellCoordsText:
+		textList.append(cellCoordsText)
 	if cellCoordsText or rowNumber or columnNumber:
 		tableID = propertyValues.get("_tableID")
 		# Always treat the table as different if there is no tableID.
@@ -969,8 +971,6 @@ def getSpeechTextForProperties(reason=controlTypes.REASON_QUERY,**propertyValues
 				# Translators: Speaks current column number (example output: column 3).
 				textList.append(_("column %s")%columnNumber)
 			oldColumnNumber = columnNumber
-	if includeTableCellCoords and cellCoordsText:
-		textList.append(cellCoordsText)
 	rowCount=propertyValues.get('rowCount',0)
 	columnCount=propertyValues.get('columnCount',0)
 	if rowCount and columnCount:
@@ -1420,6 +1420,20 @@ def getFormatFieldSpeech(attrs,attrsCache=None,formatConfig=None,unit=None,extra
 			elif extraDetail:
 				# Translators: Reported when moving out of text containing a spelling error.
 				text=_("out of spelling error")
+			else:
+				text=""
+			if text:
+				textList.append(text)
+	if formatConfig["reportGrammarErrors"]:
+		invalidGrammar=attrs.get("invalid-grammar")
+		oldInvalidGrammar=attrsCache.get("invalid-grammar") if attrsCache is not None else None
+		if (invalidGrammar or oldInvalidGrammar is not None) and invalidGrammar!=oldInvalidGrammar:
+			if invalidGrammar:
+				# Translators: Reported when text contains a grammar error.
+				text=_("grammar error")
+			elif extraDetail:
+				# Translators: Reported when moving out of text containing a grammar error.
+				text=_("out of grammar error")
 			else:
 				text=""
 			if text:

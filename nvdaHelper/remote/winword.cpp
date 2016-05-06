@@ -28,6 +28,8 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 using namespace std;
 
+#define wdDISPID_STYLES_ITEM 0
+#define wdDISPID_DOCUMENT_STYLES 22
 #define wdDISPID_DOCUMENT_RANGE 2000
 #define wdDISPID_WINDOW_DOCUMENT 2
 #define wdDISPID_WINDOW_APPLICATION 1000
@@ -70,6 +72,8 @@ using namespace std;
 #define wdDISPID_CONTENTCONTROL_CHECKED 28
 #define wdDISPID_CONTENTCONTROL_TITLE 12
 #define wdDISPID_STYLE_NAMELOCAL 0
+#define wdDISPID_STYLE_PARENT 1002
+#define wdDISPID_RANGE_GRAMMATICALERRORS 315
 #define wdDISPID_RANGE_SPELLINGERRORS 316
 #define wdDISPID_SPELLINGERRORS_ITEM 0
 #define wdDISPID_SPELLINGERRORS_COUNT 1
@@ -92,6 +96,7 @@ using namespace std;
 #define wdDISPID_RANGE_PARAGRAPHS 59
 #define wdDISPID_PARAGRAPHS_ITEM 0
 #define wdDISPID_PARAGRAPH_RANGE 0
+#define wdDISPID_PARAGRAPH_STYLE 100
 #define wdDISPID_PARAGRAPH_OUTLINELEVEL 202
 #define wdDISPID_RANGE_FOOTNOTES 54
 #define wdDISPID_FOOTNOTES_ITEM 0
@@ -323,7 +328,7 @@ BOOL generateFormFieldXML(IDispatch* pDispatchRange, wostringstream& XMLStream, 
 	return foundFormField;
 }
 
-bool collectSpellingErrorOffsets(IDispatchPtr pDispatchRange, vector<pair<long,long>>& errorVector) {
+bool collectSpellingGrammarErrorOffsets(int spellingGrammarErrorsDispId, IDispatchPtr pDispatchRange, vector<pair<long,long>>& errorVector) {
 	IDispatchPtr pDispatchApplication=NULL;
 	if(_com_dispatch_raw_propget(pDispatchRange,wdDISPID_RANGE_APPLICATION ,VT_DISPATCH,&pDispatchApplication)!=S_OK||!pDispatchApplication) {
 		return false;
@@ -335,7 +340,7 @@ bool collectSpellingErrorOffsets(IDispatchPtr pDispatchRange, vector<pair<long,l
 		return false;
 	}
 	IDispatchPtr pDispatchSpellingErrors=NULL;
-	if(_com_dispatch_raw_propget(pDispatchRange,wdDISPID_RANGE_SPELLINGERRORS,VT_DISPATCH,&pDispatchSpellingErrors)!=S_OK||!pDispatchSpellingErrors) {
+	if(_com_dispatch_raw_propget(pDispatchRange,spellingGrammarErrorsDispId,VT_DISPATCH,&pDispatchSpellingErrors)!=S_OK||!pDispatchSpellingErrors) {
 		return false;
 	}
 	long iVal=0;
@@ -358,12 +363,54 @@ bool collectSpellingErrorOffsets(IDispatchPtr pDispatchRange, vector<pair<long,l
 	return !errorVector.empty();
 }
 
-int generateHeadingXML(IDispatch* pDispatchParagraph, IDispatch* pDispatchParagraphRange, int startOffset, int endOffset, wostringstream& XMLStream) {
-	int level=0;
-	if(!pDispatchParagraph||_com_dispatch_raw_propget(pDispatchParagraph,wdDISPID_PARAGRAPH_OUTLINELEVEL,VT_I4,&level)!=S_OK||level<=0||level>=7) {
+int getHeadingLevelFromParagraph(IDispatch* pDispatchParagraph) {
+	static vector<wstring> headingNames;
+	IDispatchPtr pDispatchStyle=NULL;
+	// fetch the localized style name for the given paragraph
+	if(_com_dispatch_raw_propget(pDispatchParagraph,wdDISPID_PARAGRAPH_STYLE,VT_DISPATCH,&pDispatchStyle)!=S_OK||!pDispatchStyle) {
 		return 0;
 	}
-	XMLStream<<L"<control role=\"heading\" level=\""<<level<<L"\" ";
+	BSTR nameLocal=NULL;
+	_com_dispatch_raw_propget(pDispatchStyle,wdDISPID_STYLE_NAMELOCAL,VT_BSTR,&nameLocal);
+	if(!nameLocal) {
+		return 0;
+	}
+	// If not fetched already, fetch all builtin heading style localized names (1 through 9).
+	if(headingNames.empty()) {
+		IDispatchPtr pDispatchDocument=NULL;
+		IDispatchPtr pDispatchStyles=NULL;
+		if(_com_dispatch_raw_propget(pDispatchStyle,wdDISPID_STYLE_PARENT,VT_DISPATCH,&pDispatchDocument)==S_OK&&pDispatchDocument&&_com_dispatch_raw_propget(pDispatchDocument,wdDISPID_DOCUMENT_STYLES,VT_DISPATCH,&pDispatchStyles)==S_OK&&pDispatchStyles) {
+			for(int i=-2;i>=-10;--i) {
+				IDispatchPtr pDispatchBuiltinStyle=NULL;
+				_com_dispatch_raw_method(pDispatchStyles,wdDISPID_STYLES_ITEM,DISPATCH_METHOD,VT_DISPATCH,&pDispatchBuiltinStyle,L"\x0003",i);
+				if(pDispatchBuiltinStyle) {
+					BSTR builtinNameLocal=NULL;
+					_com_dispatch_raw_propget(pDispatchBuiltinStyle,wdDISPID_STYLE_NAMELOCAL,VT_BSTR,&builtinNameLocal);
+					if(!builtinNameLocal) continue;
+					headingNames.push_back(builtinNameLocal);
+					SysFreeString(builtinNameLocal);
+				}
+			}
+		}
+	}
+	int level=0;
+	int count=1;
+	// See if the style name matches one of the builtin heading styles
+	for(auto i=headingNames.cbegin();i!=headingNames.cend();++i) {
+		if(i->compare(nameLocal)==0) {
+			level=count;
+			break;
+		}
+		count+=1;
+	}
+	SysFreeString(nameLocal);
+	return level;
+}
+
+int generateHeadingXML(IDispatch* pDispatchParagraph, IDispatch* pDispatchParagraphRange, int startOffset, int endOffset, wostringstream& XMLStream) {
+	int headingLevel=getHeadingLevelFromParagraph(pDispatchParagraph);
+	if(!headingLevel) return 0;
+	XMLStream<<L"<control role=\"heading\" level=\""<<headingLevel<<L"\" ";
 	if(pDispatchParagraphRange) {
 		long iVal=0;
 		if(_com_dispatch_raw_propget(pDispatchParagraphRange,wdDISPID_RANGE_START,VT_I4,&iVal)==S_OK&&iVal>=startOffset) {
@@ -799,9 +846,11 @@ void winword_getTextInRange_helper(HWND hwnd, winword_getTextInRange_args* args)
 	}
 	//Check for any inline shapes in the entire range to work out whether its worth checking for them by word
 	bool hasInlineShapes=(getInlineShapesCount(pDispatchRange)>0);
-	vector<pair<long,long> > errorVector;
+	vector<pair<long,long> > spellingErrorVector;
+	vector<pair<long,long> > grammarErrorVector;
 	if(formatConfig&formatConfig_reportSpellingErrors) {
-		collectSpellingErrorOffsets(pDispatchRange,errorVector);
+		collectSpellingGrammarErrorOffsets(wdDISPID_RANGE_SPELLINGERRORS,pDispatchRange,spellingErrorVector);
+		collectSpellingGrammarErrorOffsets(wdDISPID_RANGE_GRAMMATICALERRORS,pDispatchRange,grammarErrorVector);
 	}
 	_com_dispatch_raw_method(pDispatchRange,wdDISPID_RANGE_COLLAPSE,DISPATCH_METHOD,VT_EMPTY,NULL,L"\x0003",wdCollapseStart);
 	int chunkStartOffset=args->startOffset;
@@ -900,9 +949,15 @@ void winword_getTextInRange_helper(HWND hwnd, winword_getTextInRange_args* args)
 			XMLStream<<L"<text _startOffset=\""<<chunkStartOffset<<L"\" _endOffset=\""<<chunkEndOffset<<L"\" ";
 			XMLStream<<initialFormatAttribsStream.str();
 			generateXMLAttribsForFormatting(pDispatchRange,chunkStartOffset,chunkEndOffset,formatConfig&(~curDisabledFormatConfig),XMLStream);
-			for(vector<pair<long,long>>::iterator i=errorVector.begin();i!=errorVector.end();++i) {
+			for(auto i=spellingErrorVector.cbegin();i!=spellingErrorVector.cend();++i) {
 				if(chunkStartOffset>=i->first&&chunkStartOffset<i->second) {
 					XMLStream<<L" invalid-spelling=\"1\" ";
+					break;
+				}
+			}
+			for(auto i=grammarErrorVector.cbegin();i!=grammarErrorVector.cend();++i) {
+				if(chunkStartOffset>=i->first&&chunkStartOffset<i->second) {
+					XMLStream<<L" invalid-grammar=\"1\" ";
 					break;
 				}
 			}

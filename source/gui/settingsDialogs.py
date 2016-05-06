@@ -708,6 +708,13 @@ class KeyboardSettingsDialog(SettingsDialog):
 		settingsSizer.Add(self.commandKeysCheckBox,border=10,flag=wx.BOTTOM)
 		# Translators: This is the label for a checkbox in the
 		# keyboard settings dialog.
+		self.alertForSpellingErrorsCheckBox=wx.CheckBox(self,wx.ID_ANY,label=_("Play sound for &spelling errors while typing"))
+		self.alertForSpellingErrorsCheckBox.SetValue(config.conf["keyboard"]["alertForSpellingErrors"])
+		if not config.conf["documentFormatting"]["reportSpellingErrors"]:
+			self.alertForSpellingErrorsCheckBox.Disable()
+		settingsSizer.Add(self.alertForSpellingErrorsCheckBox,border=10,flag=wx.BOTTOM)
+		# Translators: This is the label for a checkbox in the
+		# keyboard settings dialog.
 		self.handleInjectedKeysCheckBox=wx.CheckBox(self,wx.NewId(),label=_("Handle keys from other &applications"))
 		self.handleInjectedKeysCheckBox.SetValue(config.conf["keyboard"]["handleInjectedKeys"])
 		settingsSizer.Add(self.handleInjectedKeysCheckBox,border=10,flag=wx.BOTTOM)
@@ -737,6 +744,7 @@ class KeyboardSettingsDialog(SettingsDialog):
 		config.conf["keyboard"]["allowSkimReadingInSayAll"]=self.skimReadingInSayAllCheckBox.IsChecked()
 		config.conf["keyboard"]["beepForLowercaseWithCapslock"]=self.beepLowercaseCheckBox.IsChecked()
 		config.conf["keyboard"]["speakCommandKeys"]=self.commandKeysCheckBox.IsChecked()
+		config.conf["keyboard"]["alertForSpellingErrors"]=self.alertForSpellingErrorsCheckBox.IsChecked()
 		config.conf["keyboard"]["handleInjectedKeys"]=self.handleInjectedKeysCheckBox.IsChecked()
 		super(KeyboardSettingsDialog, self).onOk(evt)
 
@@ -1111,6 +1119,11 @@ class DocumentFormattingDialog(SettingsDialog):
 		settingsSizer.Add(self.spellingErrorsCheckBox,border=10,flag=wx.BOTTOM)
 		# Translators: This is the label for a checkbox in the
 		# document formatting settings dialog.
+		self.grammarErrorsCheckBox=wx.CheckBox(self,wx.ID_ANY,label=_("Report &grammar errors"))
+		self.grammarErrorsCheckBox.SetValue(config.conf["documentFormatting"]["reportGrammarErrors"])
+		settingsSizer.Add(self.grammarErrorsCheckBox,border=10,flag=wx.BOTTOM)
+		# Translators: This is the label for a checkbox in the
+		# document formatting settings dialog.
 		self.pageCheckBox=wx.CheckBox(self,wx.NewId(),label=_("Report &pages"))
 		self.pageCheckBox.SetValue(config.conf["documentFormatting"]["reportPage"])
 		settingsSizer.Add(self.pageCheckBox,border=10,flag=wx.BOTTOM)
@@ -1195,6 +1208,7 @@ class DocumentFormattingDialog(SettingsDialog):
 		config.conf["documentFormatting"]["reportAlignment"]=self.alignmentCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportStyle"]=self.styleCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportSpellingErrors"]=self.spellingErrorsCheckBox.IsChecked()
+		config.conf["documentFormatting"]["reportGrammarErrors"]=self.grammarErrorsCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportPage"]=self.pageCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportLineNumber"]=self.lineNumberCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportLineIndentation"]=self.lineIndentationCheckBox.IsChecked()

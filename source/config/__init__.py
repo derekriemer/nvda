@@ -155,6 +155,7 @@ confspec = ConfigObj(StringIO(
 	speechInterruptForCharacters = boolean(default=true)
 	speechInterruptForEnter = boolean(default=true)
 	allowSkimReadingInSayAll = boolean(default=False)
+	alertForSpellingErrors = boolean(default=True)
 	handleInjectedKeys= boolean(default=true)
 
 [virtualBuffers]
@@ -180,6 +181,7 @@ confspec = ConfigObj(StringIO(
 	reportAlignment = boolean(default=false)
 	reportStyle = boolean(default=false)
 	reportSpellingErrors = boolean(default=true)
+	reportGrammarErrors = boolean(default=true)
 	reportPage = boolean(default=true)
 	reportLineNumber = boolean(default=False)
 	reportLineIndentation = boolean(default=False)

@@ -647,6 +647,7 @@ class FakeTabNavigation(NVDAObject):
 		return None
 		
 	def script_tab(self, gesture):
+		log.info(controlTypes.roleLabels[self.tab.role])
 		try:
 			self.tab.setFocus()
 		except AttributeError:
@@ -660,7 +661,7 @@ class FakeTabNavigation(NVDAObject):
 			#They didn't define a custom tab order in this direction.
 			gesture.send()
 
-		__gestures = {
-			"kb:tab" : "tab",
-			"kb:shift+tab" : "shiftTab",
-		}
+	__gestures = {
+		"kb:tab" : "tab",
+		"kb:shift+tab" : "shiftTab",
+	}

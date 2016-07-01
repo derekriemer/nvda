@@ -633,3 +633,34 @@ class Notification(NVDAObject):
 		braille.handler.message(braille.getBrailleTextForProperties(name=self.name, role=self.role))
 
 	event_show = event_alert
+
+
+class FakeTabNavigation(NVDAObject):
+	""" 
+		Allows a script author to define what objects NVDA should send tab or shift+tab to. Authors should override _get_tab and _get_shiftTab
+	"""
+
+	def _get_tab(self):
+		return None
+
+	def _get_shiftTab(self):
+		return None
+		
+	def script_tab(self, gesture):
+		try:
+			self.tab.setFocus()
+		except AttributeError:
+			#They didn't define a custom tab order in this direction.
+			gesture.send()
+	
+	def script_shiftTab(self, gesture):
+		try:
+			self.shiftTab.setFocus()
+		except AttributeError:
+			#They didn't define a custom tab order in this direction.
+			gesture.send()
+
+		__gestures = {
+			"kb:tab" : "tab",
+			"kb:shift+tab" : "shiftTab",
+		}

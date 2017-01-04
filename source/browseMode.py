@@ -203,6 +203,14 @@ class TextInfoQuickNavItem(QuickNavItem):
 	def moveTo(self):
 		info=self.textInfo.copy()
 		info.collapse()
+		while self.document._shouldSkipBlankLines(info):
+			i = info.copy()
+			i.expand(textInfos.UNIT_LINE)
+			print i.text
+			if speech.isBlank(i.text):
+				info.move(textInfos.UNIT_LINE, 1)
+			else:
+				break
 		self.document._set_selection(info,reason=REASON_QUICKNAV)
 
 	@property

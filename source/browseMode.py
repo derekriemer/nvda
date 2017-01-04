@@ -203,11 +203,13 @@ class TextInfoQuickNavItem(QuickNavItem):
 	def moveTo(self):
 		info=self.textInfo.copy()
 		info.collapse()
+		print "terd"
 		while self.document._shouldSkipBlankLines(info):
 			i = info.copy()
 			i.expand(textInfos.UNIT_LINE)
-			print i.text
+			print "fish " + i.text
 			if speech.isBlank(i.text):
+				import tones;tones.beep(500,500);import time;time.sleep(.700)
 				info.move(textInfos.UNIT_LINE, 1)
 			else:
 				break

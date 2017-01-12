@@ -1139,6 +1139,7 @@ the NVDAObject for IAccessible
 			parent=obj.parent=obj.parent
 			obj=parent
 		if not obj or not hasattr(obj,'IAccessibleTableObject'):
+			print 1144
 			return None
 		self._table=obj
 		return obj
@@ -1146,6 +1147,8 @@ the NVDAObject for IAccessible
 	def _get_tableID(self):
 		table = self.table
 		if not table:
+			if self.role == controlTypes.ROLE_TABLE:
+				return  (self.windowHandle, self.IA2UniqueID)
 			return super(IAccessible, self).tableID
 		return (self.windowHandle, self.table.IA2UniqueID)
 

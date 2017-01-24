@@ -2,7 +2,7 @@
 #A part of NonVisual Desktop Access (NVDA)
 #This file is covered by the GNU General Public License.
 #See the file COPYING for more details.
-#Copyright (C) 2008-2013 NV Access Limited
+#Copyright (C) 2008-2017 NV Access Limited, Derek Riemer.
 
 import watchdog
 
@@ -26,6 +26,11 @@ import api
 import gui
 from logHandler import log
 import braille
+
+def advancedSettings():
+	consoleUI.Hide()
+	gui.mainFrame._popupSettingsDialog(gui.settingsDialogs.AdvancedSettings)
+
 
 class HelpCommand(object):
 	"""
@@ -94,6 +99,7 @@ class PythonConsole(code.InteractiveConsole, AutoPropertyObject):
 			"queueHandler": queueHandler,
 			"speech": speech,
 			"braille": braille,
+			"advancedSettings": advancedSettings,
 		}
 		#: The variables last added to the namespace containing a snapshot of NVDA's state.
 		#: @type: dict
@@ -210,15 +216,9 @@ class ConsoleUI(wx.Frame):
 
 	def execute(self):
 		data = self.inputCtrl.GetValue()
-		if data == u"about:config":
-			watchdog.alive()
-			gui.mainFrame._popupSettingsDialog(gui.settingsDialogs.AdvancedSettings)
-			self.console.push("")
-			watchdog.asleep()
-		else:
-			watchdog.alive()
-			self.console.push(data)
-			watchdog.asleep()
+		watchdog.alive()
+		self.console.push(data)
+		watchdog.asleep()
 		if data:
 			# Only add non-blank lines to history.
 			if len(self.inputHistory) > 1 and self.inputHistory[-2] == data:

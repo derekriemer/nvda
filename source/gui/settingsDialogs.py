@@ -2058,17 +2058,54 @@ class InputGesturesDialog(SettingsDialog):
 
 		super(InputGesturesDialog, self).onOk(evt)
 
+class AdvancedSettingEditor(wx.Dialog):
+
+	def __init__(self, parent, item=""):
+		self.item = item
+		# Translators: This is the label for the edit Item  dialog.
+		title=_("Edit Value for Setting %s") % item
+		super(AdvancedSettingEditor,self).__init__(parent,title=title)
+		mainSizer=wx.BoxSizer(wx.VERTICAL)
+		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
+		realItem = self.lastItem = config.conf.rootSection
+		for i in item.split("."):
+			self.lastItem = realItem
+			realItem = realItem[i]
+		if isinstance(realItem, bool):
+			self.control = wx.CheckBox(self, label=item)
+			sHelper.addItem(self.control)
+			self.control.Value = realItem
+		else:
+			self.control=sHelper.addLabeledControl(item, wx.TextCtrl)
+			self.control.Value = str(realItem)
+
+		sHelper.addDialogDismissButtons(self.CreateButtonSizer(wx.OK|wx.CANCEL))
+
+		mainSizer.Add(sHelper.sizer,border=20,flag=wx.ALL)
+		mainSizer.Fit(self)
+		self.SetSizer(mainSizer)
+		self.control.SetFocus()
+		self.Bind(wx.EVT_BUTTON,self.onOk,id=wx.ID_OK)
+
+	def onOk(self,evt):
+		self.lastItem[self.item.split(".")[-1]] = self.control.Value
+		evt.Skip()
+
 class AdvancedSettings(SettingsDialog):
 	title = _("Advanced Settings")
 
 
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+		sHelper.addItem(wx.StaticText(self, id=wx.NewId(),
+			#Translators: Danger message for advanced settings.
+			label=_("Danger: Changing settings via the advanced settings is dangerous, and should be performed with extreme care. This is intended  for experts and developers only.")))
+		
 		#Translators: search field for advanced settings.
 		searchLabel = _("Search")
 		self.searchField = sHelper.addLabeledControl(searchLabel, wx.TextCtrl)
 		self.searchField.Bind(wx.EVT_TEXT, self.onSearchChange, self.searchField)
-		# Translators: The label for the multi-column list of dictionary entries in the Advanced Settings Dialog.
+		# Translators: The label for the multi-column list   in the Advanced Settings Dialog.
 		configLabelText=_("&Configuration")
 		self.configList=sHelper.addLabeledControl(configLabelText, wx.ListCtrl, style=wx.LC_REPORT|wx.LC_SINGLE_SEL,size=(550,350))
 		# Translators: The label for a column in Advanced Settings list used to Mark a config key.
@@ -2077,14 +2114,21 @@ class AdvancedSettings(SettingsDialog):
 		self.configList.InsertColumn(1,_("Value"),width=150)
 		self.editingIndex=-1
 		self.configList.Bind(wx.EVT_CHAR, self.onListChar)
+		config.l = self.configList
 		self.onSearchChange() #initial population of list.
+		self.configList.Focus(0)
 
 	def onSearchChange(self, evt=None):
 		self.configList.DeleteAllItems()
 		value = self.searchField.Value.lower()
-		print value
+		if " " in value:
+			#allow searching for words, and treat each word as a token. Match all tokens as if they're partial or total keys.
+			values = value.split()
+		else:
+			values = [value]
 		for item in config.flattenConfig():
-			if value not in item[0].lower():
+			#If any of the search tokens don't match, skip this item.
+			if any([value not in item[0].lower() for value in values]):
 				continue
 			self.configList.Append(item)
 
@@ -2094,11 +2138,31 @@ class AdvancedSettings(SettingsDialog):
 
 	def onListChar(self, evt):
 		if evt.KeyCode == wx.WXK_RETURN:
-			# The enter key should be propagated to the dialog and thus activate the default button,
-			# but this is broken (wx ticket #3725).
-			# Therefore, we must catch the enter key here.
-			# Activate the OK button.
-			self.ProcessEvent(wx.CommandEvent(wx.wxEVT_COMMAND_BUTTON_CLICKED, wx.ID_OK))
+			#We want to edit this key's value.
+			dialog = AdvancedSettingEditor(self, item=self.configList.GetItemText(self.configList.FocusedItem, 0))
+			if dialog.ShowModal() == wx.ID_OK:
+				self.configList.SetStringItem(self.configList.FocusedItem, 1, str(dialog.control.Value))
+			self.configList.SetFocus()
+		elif evt.KeyCode == wx.WXK_DELETE:
+			focusedIndex = self.configList.FocusedItem
+			if focusedIndex == -1:
+				return
+			focusedItem = self.configList.GetItemText(focusedIndex)
+			if gui.messageBox(
+				#Translators: Warning message for deleting a setting from the advanced config editor.
+				_("Are you absolutely sure you want to delete the config value for %s? This is not reversable, and only intended for developers who know what they are doing.") % focusedItem,
+				#Translators: The warning dialog title for Deleting a config value.
+				_("Warning"),
+				wx.YES|wx.NO) == wx.YES:
+				keyParts = focusedItem.split(".")
+				try:
+					del config.conf.getFinalSection(keyParts[:-1])._getUpdateSection()[keyParts[-1]]
+				except AttributeError:
+					del config.conf.getFinalSection(keyParts[:-1])[keyParts[-1]]
+				self.configList.DeleteItem(focusedIndex)
+				focusedIndex = (focusedIndex - 1 if focusedIndex else 0)
+				self.configList.Focus(focusedIndex)
+			self.configList.SetFocus()
 		else:
 			evt.Skip()
 

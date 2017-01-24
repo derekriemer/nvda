@@ -792,6 +792,16 @@ class ConfigManager(object):
 			spec = spec[nextKey]
 		return conf.validator._parse_with_caching(spec)[2][validationParameter]
 
+	def getFinalSection(self, path):
+		"""Gets the section represented by path.
+		@param path: n iterable of section names, which yields a section.
+		@raises: KeyError if there's no such section.
+		"""
+		section = conf
+		for part in path:
+			section = section[part]
+		return section
+
 class AggregatedSection(object):
 	"""A view of a section of configuration which aggregates settings from all active profiles.
 	"""

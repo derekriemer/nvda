@@ -210,9 +210,15 @@ class ConsoleUI(wx.Frame):
 
 	def execute(self):
 		data = self.inputCtrl.GetValue()
-		watchdog.alive()
-		self.console.push(data)
-		watchdog.asleep()
+		if data == u"about:config":
+			watchdog.alive()
+			gui.mainFrame._popupSettingsDialog(gui.settingsDialogs.AdvancedSettings)
+			self.console.push("")
+			watchdog.asleep()
+		else:
+			watchdog.alive()
+			self.console.push(data)
+			watchdog.asleep()
 		if data:
 			# Only add non-blank lines to history.
 			if len(self.inputHistory) > 1 and self.inputHistory[-2] == data:

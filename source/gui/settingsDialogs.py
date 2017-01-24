@@ -1366,7 +1366,7 @@ class DictionaryDialog(SettingsDialog):
 
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
-		# Translators: The label for the combo box of dictionary entries in speech dictionary dialog.
+		# Translators: The label for the multi-column list of dictionary entries in speech dictionary dialog.
 		entriesLabelText=_("&Dictionary entries")
 		self.dictList=sHelper.addLabeledControl(entriesLabelText, wx.ListCtrl, style=wx.LC_REPORT|wx.LC_SINGLE_SEL,size=(550,350))
 		# Translators: The label for a column in dictionary entries list used to identify comments for the entry.
@@ -2057,3 +2057,37 @@ class InputGesturesDialog(SettingsDialog):
 					_("Error"), wx.OK | wx.ICON_ERROR)
 
 		super(InputGesturesDialog, self).onOk(evt)
+
+class AdvancedSettings(SettingsDialog):
+	title = _("Advanced Settings")
+
+
+	def makeSettings(self, settingsSizer):
+		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+		# Translators: The label for the multi-column list of dictionary entries in the Advanced Settings Dialog.
+		configLabelText=_("&Configuration")
+		self.configList=sHelper.addLabeledControl(configLabelText, wx.ListCtrl, style=wx.LC_REPORT|wx.LC_SINGLE_SEL,size=(550,350))
+		# Translators: The label for a column in Advanced Settings list used to Mark a config key.
+		self.configList.InsertColumn(0,_("Key"),width=150)
+		# Translators: The label for a column in advanced config  list used to identify the value of the config.
+		self.configList.InsertColumn(1,_("Value"),width=150)
+		for item in config.flattenConfig():
+			self.configList.Append(item)
+			config.l = self.configList
+		self.editingIndex=-1
+		self.configList.Bind(wx.EVT_CHAR, self.onListChar)
+
+	def postInit(self):
+		self.configList.SetFocus()
+
+	def onListChar(self, evt):
+		if evt.KeyCode == wx.WXK_RETURN:
+			# The enter key should be propagated to the dialog and thus activate the default button,
+			# but this is broken (wx ticket #3725).
+			# Therefore, we must catch the enter key here.
+			# Activate the OK button.
+			self.ProcessEvent(wx.CommandEvent(wx.wxEVT_COMMAND_BUTTON_CLICKED, wx.ID_OK))
+		else:
+			evt.Skip()
+
+

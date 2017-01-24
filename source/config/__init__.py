@@ -29,6 +29,19 @@ import winKernel
 import profileUpgrader
 from .configSpec import confspec
 
+def _flatten(section):
+	for i, j in section.iteritems():
+		if isinstance(j, AggregatedSection):
+			for obj in _flatten(j):
+				yield obj
+		else:
+			path = section.path + (i,)
+			yield (".".join(path), j)
+
+def flattenConfig():
+	return _flatten(conf.rootSection)
+
+
 def validateConfig(configObj,validator,validationResult=None,keyList=None):
 	"""
 	@deprecated: Add-ons which need this should provide their own implementation.

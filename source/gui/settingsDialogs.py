@@ -2067,20 +2067,29 @@ class AdvancedSettingEditor(wx.Dialog):
 		super(AdvancedSettingEditor,self).__init__(parent,title=title)
 		mainSizer=wx.BoxSizer(wx.VERTICAL)
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
-		realItem = self.lastItem = config.conf.rootSection
-		for i in item.split("."):
-			self.lastItem = realItem
-			realItem = realItem[i]
+		pathComponents = item.split(".")
+		self.lastItem = config.conf.getFinalSection(pathComponents[:-1])
+		realItem = self.lastItem[pathComponents[-1]]
+		print realItem, type(realItem)
 		if isinstance(realItem, bool):
 			self.control = wx.CheckBox(self, label=item)
 			sHelper.addItem(self.control)
 			self.control.Value = realItem
+		elif isinstance(realItem, int):
+			try:
+				min = int(config.conf.getConfigValidationParameter(pathComponents, "min"))
+			except KeyError:
+				min = -32767
+			try:
+				max= int(config.conf.getConfigValidationParameter(pathComponents, "max"))
+			except KeyError:
+				max = 32768
+			self.control = sHelper.addLabeledControl(item, nvdaControls.SelectOnFocusSpinCtrl, id=wx.NewId(), 
+				value=str(realItem), min=min, max=max)
 		else:
 			self.control=sHelper.addLabeledControl(item, wx.TextCtrl)
 			self.control.Value = str(realItem)
-
 		sHelper.addDialogDismissButtons(self.CreateButtonSizer(wx.OK|wx.CANCEL))
-
 		mainSizer.Add(sHelper.sizer,border=20,flag=wx.ALL)
 		mainSizer.Fit(self)
 		self.SetSizer(mainSizer)
@@ -2100,7 +2109,6 @@ class AdvancedSettings(SettingsDialog):
 		sHelper.addItem(wx.StaticText(self, id=wx.NewId(),
 			#Translators: Danger message for advanced settings.
 			label=_("Danger: Changing settings via the advanced settings is dangerous, and should be performed with extreme care. This is intended  for experts and developers only.")))
-		
 		#Translators: search field for advanced settings.
 		searchLabel = _("Search")
 		self.searchField = sHelper.addLabeledControl(searchLabel, wx.TextCtrl)
@@ -2114,7 +2122,6 @@ class AdvancedSettings(SettingsDialog):
 		self.configList.InsertColumn(1,_("Value"),width=150)
 		self.editingIndex=-1
 		self.configList.Bind(wx.EVT_CHAR, self.onListChar)
-		config.l = self.configList
 		self.onSearchChange() #initial population of list.
 		self.configList.Focus(0)
 

@@ -2064,6 +2064,10 @@ class AdvancedSettings(SettingsDialog):
 
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+		#Translators: search field for advanced settings.
+		searchLabel = _("Search")
+		self.searchField = sHelper.addLabeledControl(searchLabel, wx.TextCtrl)
+		self.searchField.Bind(wx.EVT_TEXT, self.onSearchChange, self.searchField)
 		# Translators: The label for the multi-column list of dictionary entries in the Advanced Settings Dialog.
 		configLabelText=_("&Configuration")
 		self.configList=sHelper.addLabeledControl(configLabelText, wx.ListCtrl, style=wx.LC_REPORT|wx.LC_SINGLE_SEL,size=(550,350))
@@ -2071,11 +2075,19 @@ class AdvancedSettings(SettingsDialog):
 		self.configList.InsertColumn(0,_("Key"),width=150)
 		# Translators: The label for a column in advanced config  list used to identify the value of the config.
 		self.configList.InsertColumn(1,_("Value"),width=150)
-		for item in config.flattenConfig():
-			self.configList.Append(item)
-			config.l = self.configList
 		self.editingIndex=-1
 		self.configList.Bind(wx.EVT_CHAR, self.onListChar)
+		self.onSearchChange() #initial population of list.
+
+	def onSearchChange(self, evt=None):
+		self.configList.DeleteAllItems()
+		value = self.searchField.Value.lower()
+		print value
+		for item in config.flattenConfig():
+			if value not in item[0].lower():
+				continue
+			self.configList.Append(item)
+
 
 	def postInit(self):
 		self.configList.SetFocus()

@@ -31,6 +31,8 @@ from .configSpec import confspec
 
 def _flatten(section):
 	for i, j in section.iteritems():
+		if i == "__many__":
+			continue
 		if isinstance(j, AggregatedSection):
 			for obj in _flatten(j):
 				yield obj

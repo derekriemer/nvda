@@ -11,13 +11,15 @@ import config
 import speech
 import sayAllHandler
 import appModuleHandler
+import terminalModuleHandler
+import globalPluginHandler
 import api
 import queueHandler
 from logHandler import log
 import inputCore
-import globalPluginHandler
 import braille
 import keyLabels
+
 
 _numScriptsQueued=0 #Number of scripts that are queued to be executed
 #: Number of scripts that send their gestures on that are queued to be executed or are currently being executed.
@@ -93,6 +95,13 @@ def findScript(gesture):
 	app = focus.appModule
 	if app:
 		func = _getObjScript(app, gesture, globalMapScripts)
+		if func:
+			return func
+
+	#TerminalModule level.
+	from NVDAObjects.behaviors import Terminal
+	if isinstance(focus, Terminal):
+		func = _getObjScript(terminalModuleHandler.getCurrentModule(), gesture, globalMapScripts)
 		if func:
 			return func
 

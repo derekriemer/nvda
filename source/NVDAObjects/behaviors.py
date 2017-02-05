@@ -26,6 +26,8 @@ from logHandler import log
 import api
 import ui
 import braille
+import terminalModuleHandler
+import globalCommands
 
 class ProgressBar(NVDAObject):
 
@@ -352,6 +354,15 @@ class Terminal(LiveText, EditableText):
 
 	def event_loseFocus(self):
 		self.stopMonitoring()
+
+	def script_cycleTerminalMode(self, gesture):
+		terminalModuleHandler.setNextModule()
+	script_cycleTerminalMode.category = globalCommands.SCRCAT_TOOLS
+	script_cycleTerminalMode.__doc__ = _("Cycles to the next terminal Module.")
+
+	__gestures = {
+		"kb:nvda+space" : "cycleTerminalMode",
+	}
 
 class CandidateItem(NVDAObject):
 

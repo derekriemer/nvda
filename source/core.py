@@ -200,6 +200,9 @@ This initializes all modules such as audio, IAccessible, keyboard, mouse, and GU
 	import appModuleHandler
 	log.debug("Initializing appModule Handler")
 	appModuleHandler.initialize()
+	import terminalModuleHandler
+	log.debug("Initializing terminalModule Handler")
+	terminalModuleHandler.initialize()
 	import NVDAHelper
 	log.debug("Initializing NVDAHelper")
 	NVDAHelper.initialize()
@@ -417,6 +420,7 @@ This initializes all modules such as audio, IAccessible, keyboard, mouse, and GU
 	_terminate(winConsoleHandler, name="winConsole support")
 	_terminate(JABHandler, name="Java Access Bridge support")
 	_terminate(appModuleHandler, name="app module handler")
+	_terminate(terminalModuleHandler, name="terminal module handler")
 	_terminate(NVDAHelper)
 	_terminate(touchHandler)
 	_terminate(keyboardHandler, name="keyboard handler")

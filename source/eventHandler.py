@@ -2,20 +2,22 @@
 #A part of NonVisual Desktop Access (NVDA)
 #This file is covered by the GNU General Public License.
 #See the file COPYING for more details.
-#Copyright (C) 2007-2014 NV Access Limited
+#Copyright (C) 2007-2017 NV Access Limited, Derek Riemer
 
 import threading
 import queueHandler
 import api
 import speech
 import appModuleHandler
+import terminalModuleHandler
 import treeInterceptorHandler
+import globalPluginHandler
 import globalVars
 import controlTypes
 from logHandler import log
-import globalPluginHandler
 import config
 import winUser
+from NVDAObjects.behaviors import Terminal
 
 #Some dicts to store event counts by name and or obj
 _pendingEventCountsByName={}
@@ -88,6 +90,7 @@ class _EventExecuter(object):
 		self.kwargs = kwargs
 		self._gen = self.gen(eventName, obj)
 		try:
+			#Calling next once starts the chain. Each event handler calls nextHandler when ready, thus we only call next once.
 			self.next()
 		except StopIteration:
 			pass
@@ -95,6 +98,7 @@ class _EventExecuter(object):
 
 	def next(self):
 		func, args = next(self._gen)
+		print func, args, self.kwargs
 		return func(*args, **self.kwargs)
 
 	def gen(self, eventName, obj):
@@ -112,6 +116,13 @@ class _EventExecuter(object):
 			func = getattr(app, funcName, None)
 			if func:
 				yield func, (obj, self.next)
+
+			#terminalModule level.
+			if isinstance(obj, Terminal):
+				tm = terminalModuleHandler.getCurrentModule()
+				func = getattr(tm, funcName, None)
+				if func:
+					yield func, (obj, self.next)
 
 		# Tree interceptor level.
 		treeInterceptor = obj.treeInterceptor
